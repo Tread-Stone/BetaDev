@@ -1,0 +1,25 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install dependencies
+      run: sudo apt-get install clang
+
+    - name: Build
+      run: make
+
+    # Add your test running steps here if you have tests to run.
+    - name: Test
+      run: make test
