@@ -1,9 +1,12 @@
 #ifndef NEURALNET_H_
 #define NEURALNET_H_
-
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
+
+#ifndef NN_RELU_PARAM
+#define NN_RELU_PARAM 0.01f
+#endif  // NN_RELU_PARAM
 
 #ifndef NN_MALLOC
 #include <stdlib.h>
@@ -17,12 +20,59 @@
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
+typedef enum {
+  ACTIVATION_SIGMOID,
+  ACTIVATION_RELU,
+  ACTIVATION_TANH,
+  ACTIVATION_SIN,
+} ACTIVATION;
+
 float rand_float(void);
+
+/**
+ * Takes values from -oo to +oo and maps them to 0 to 1
+ * @param float x
+ */
 float sigmoidf(float x);
+
+/**
+ * F(x) = x if x > 0 else x * NN_RELU_PARAM
+ * @param float x
+ */
+float reluf(float x);
+
+/**
+ * Hyperbolic time chamber tanh
+ * @param float x
+ * @return float
+ */
+float tanhf(float x);
+
+/**
+ * Dispatch to the corresponding activation function
+ * @param float x
+ * @param ACTIVATION act
+ * @return float
+ */
+float activationf(float x, ACTIVATION act);
+
+/**
+ * Derivative of the activation function
+ * @param float x
+ * @param ACTIVATION activations
+ * @return float
+ */
+float activationdf(float x, ACTIVATION act);
+
+typedef struct {
+  size_t capacity;
+  size_t count;
+} Region;
 
 typedef struct {
   size_t rows;
   size_t cols;
+  // TODO Remove stride
   size_t stride;
   float *elements;
 } Matrix;
@@ -99,7 +149,7 @@ typedef struct {
 } NN;
 
 #define NN_INPUT(nn) (nn).activations[0]
-#define NN_OUTPUT(nn) (nn).activations[(nn).count]
+#define NN_OUTPUT(nn) (nn).activations[(nn).arch_count]
 
 /**
  * Allocates memory for a neural network
@@ -136,6 +186,7 @@ void nn_forward(NN nn);
  * @param NN nn
  * @param Matrix ti
  * @param Matrix to
+ * @return float
  */
 float nn_cost(NN nn, Matrix ti, Matrix to);
 
@@ -160,6 +211,16 @@ void nn_learn(NN nn, NN g, float rate);
 #ifdef NN_IMPLEMENTATION
 
 float sigmoidf(float x) { return 1.f / (1.f + expf(-x)); }
+
+float reluf(float x) { return x > 0 ? x : x * NN_RELU_PARAM; }
+
+float tanhf(float x) {
+  float ex = expf(x);
+  float emx = expf(-x);
+  return (ex - emx) / (ex + emx);
+}
+
+float sinf(float x) { return sinf(x); }
 
 float rand_float(void) { return (float)rand() / (float)RAND_MAX; }
 
@@ -261,9 +322,8 @@ NN nn_alloc(size_t *arch, size_t arch_count) {
   NN_ASSERT(arch_count > 0);
 
   NN nn;
-  nn.arch_count = arch_count - 1;
-
   nn.arch = arch;
+  nn.arch_count = arch_count - 1;
 
   nn.weights = NN_MALLOC(sizeof(*nn.weights) * nn.arch_count);
   NN_ASSERT(nn.weights != NULL);
@@ -383,7 +443,7 @@ void nn_backprop(NN nn, NN g, Matrix ti, Matrix to) {
     }
   }
 
-  for (size_t i = 0; i < g.count; ++i) {
+  for (size_t i = 0; i < g.arch_count; ++i) {
     for (size_t j = 0; j < g.weights[i].rows; ++j) {
       for (size_t k = 0; k < g.weights[i].cols; ++k) {
         MAT_AT(g.weights[i], j, k) /= n;
@@ -438,4 +498,4 @@ void nn_learn(NN nn, NN g, float rate) {
   }
 }
 
-#endif  // NN_IMPLEMENTATION
+#endif  // NNN_IMPLEMENTATIONN_IMPLEMENTATION

@@ -20,6 +20,7 @@ jobs:
     - name: Build
       run: make
 
-    # Add your test running steps here if you have tests to run.
+    """ Add your test running steps here if you have tests to run.
     - name: Test
       run: make test
+    """
