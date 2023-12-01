@@ -1,7 +1,9 @@
 #ifndef NEURALNET_H_
 #define NEURALNET_H_
+
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #ifndef NN_RELU_PARAM
@@ -64,9 +66,17 @@ float activationf(float x, ACTIVATION act);
  */
 float activationdf(float x, ACTIVATION act);
 
+/**
+ * A region is a block of memory that can be allocated from
+ * @param Region *r
+ * @param size_t size
+ * @param uintptr_t elements
+ * @return void *
+ */
 typedef struct {
   size_t capacity;
   size_t count;
+  uintptr_t *elements;
 } Region;
 
 typedef struct {
@@ -220,7 +230,37 @@ float tanhf(float x) {
   return (ex - emx) / (ex + emx);
 }
 
-float sinf(float x) { return sinf(x); }
+float actf(float x, ACTIVATION act) {
+  switch (act) {
+    case ACTIVATION_SIGMOID:
+      return sigmoidf(x);
+    case ACTIVATION_RELU:
+      return reluf(x);
+    case ACTIVATION_TANH:
+      return tanhf(x);
+    case ACTIVATION_SIN:
+      return sinf(x);
+    default:
+      NN_ASSERT(0 && "Invalid activation function");
+      return 0;
+  }
+}
+
+float actdf(float x, ACTIVATION act) {
+  switch (act) {
+    case ACTIVATION_SIGMOID:
+      return x * (1 - x);
+    case ACTIVATION_RELU:
+      return x > 0 ? 1 : NN_RELU_PARAM;
+    case ACTIVATION_TANH:
+      return 1 - x * x;
+    case ACTIVATION_SIN:
+      return cosf(asif(x));
+    default:
+      NN_ASSERT(0 && "Invalid activation function");
+      return 0;
+  }
+}
 
 float rand_float(void) { return (float)rand() / (float)RAND_MAX; }
 
@@ -401,6 +441,12 @@ float nn_cost(NN nn, Matrix ti, Matrix to) {
   return c / n;
 }
 
+/**
+ * TODO HAYDEN: Refactor this
+ * integrate dericvative activation function activationdf()
+ * Better variable names
+ *
+ */
 void nn_backprop(NN nn, NN g, Matrix ti, Matrix to) {
   NN_ASSERT(ti.rows == to.rows);
   size_t n = ti.rows;
@@ -498,4 +544,16 @@ void nn_learn(NN nn, NN g, float rate) {
   }
 }
 
-#endif  // NNN_IMPLEMENTATIONN_IMPLEMENTATION
+void *region_alloc(Region *r, size_t size) {
+  if (r == NULL) return NN_MALLOC(size);
+  size_t word_size = sizeof(*r->elements);
+  size_t count = (size + word_size - 1) / word_size;
+
+  NN_ASSERT(r->count + count <= r->capacity);
+  if (r->count + count > r->capacity) return NULL;
+  void *result = &r->elements[r->size];
+  r->size += count;
+  return result;
+}
+
+#endif  // NN_IMPLEMENTATION
