@@ -89,7 +89,9 @@ void matrix_print(Matrix m, const char *name, size_t padding);
 #define MAT_PRINT(m) matrix_print(m, #m);
 
 typedef struct {
-  size_t count;
+  size_t *arch;
+  size_t arch_count;
+
   Matrix *weights;
   Matrix *biases;
 
@@ -259,16 +261,19 @@ NN nn_alloc(size_t *arch, size_t arch_count) {
   NN_ASSERT(arch_count > 0);
 
   NN nn;
-  nn.count = arch_count - 1;
+  nn.arch_count = arch_count - 1;
 
-  nn.weights = NN_MALLOC(sizeof(*nn.weights) * nn.count);
+  nn.arch = arch;
+
+  nn.weights = NN_MALLOC(sizeof(*nn.weights) * nn.arch_count);
   NN_ASSERT(nn.weights != NULL);
-  nn.biases = NN_MALLOC(sizeof(*nn.biases) * nn.count);
+  nn.biases = NN_MALLOC(sizeof(*nn.biases) * nn.arch_count);
   NN_ASSERT(nn.biases != NULL);
-  nn.activations = NN_MALLOC(sizeof(*nn.activations) * (nn.count + 1));
+  nn.activations = NN_MALLOC(sizeof(*nn.activations) * (nn.arch_count + 1));
   NN_ASSERT(nn.activations != NULL);
 
   nn.activations[0] = matrix_alloc(1, arch[0]);
+
   for (size_t i = 1; i < arch_count; ++i) {
     nn.weights[i - 1] = matrix_alloc(nn.activations[i - 1].cols, arch[i]);
     nn.biases[i - 1] = matrix_alloc(1, arch[i]);
@@ -279,18 +284,18 @@ NN nn_alloc(size_t *arch, size_t arch_count) {
 }
 
 void nn_zero(NN nn) {
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_fill(nn.weights[i], 0);
     matrix_fill(nn.biases[i], 0);
     matrix_fill(nn.activations[i], 0);
   }
-  matrix_fill(nn.activations[nn.count], 0);
+  matrix_fill(nn.activations[nn.arch_count], 0);
 }
 
 void nn_print(NN nn, const char *name) {
   char buf[256];
   printf("%s = [\n", name);
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     snprintf(buf, sizeof(buf), "weights%zu", i);
     matrix_print(nn.weights[i], buf, 4);
     snprintf(buf, sizeof(buf), "biases%zu", i);
@@ -300,14 +305,14 @@ void nn_print(NN nn, const char *name) {
 }
 
 void nn_rand(NN nn, float low, float high) {
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_randomize(nn.weights[i], low, high);
     matrix_randomize(nn.biases[i], low, high);
   }
 }
 
 void nn_forward(NN nn) {
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_multi(nn.activations[i + 1], nn.activations[i], nn.weights[i]);
     matrix_sum(nn.activations[i + 1], nn.biases[i]);
     matrix_sig(nn.activations[i + 1]);
@@ -352,7 +357,7 @@ void nn_backprop(NN nn, NN g, Matrix ti, Matrix to) {
     matrix_copy(NN_INPUT(nn), matrix_row(ti, i));
     nn_forward(nn);
 
-    for (size_t j = 0; j <= nn.count; ++j) {
+    for (size_t j = 0; j <= nn.arch_count; ++j) {
       matrix_fill(g.activations[j], 0);
     }
 
@@ -361,7 +366,7 @@ void nn_backprop(NN nn, NN g, Matrix ti, Matrix to) {
           MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
     }
 
-    for (size_t l = nn.count; l > 0; --l) {
+    for (size_t l = nn.arch_count; l > 0; --l) {
       for (size_t j = 0; j < nn.activations[l].cols; ++j) {
         float a = MAT_AT(nn.activations[l], 0, j);
         float da = MAT_AT(g.activations[l], 0, j);
@@ -396,7 +401,7 @@ void nn_finite_diff(NN nn, NN g, float eps, Matrix ti, Matrix to) {
   float saved;
   float c = nn_cost(nn, ti, to);
 
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     for (size_t j = 0; j < nn.weights[i].rows; ++j) {
       for (size_t k = 0; k < nn.weights[i].cols; ++k) {
         saved = MAT_AT(nn.weights[i], j, k);
@@ -418,7 +423,7 @@ void nn_finite_diff(NN nn, NN g, float eps, Matrix ti, Matrix to) {
 }
 
 void nn_learn(NN nn, NN g, float rate) {
-  for (size_t i = 0; i < nn.count; ++i) {
+  for (size_t i = 0; i < nn.arch_count; ++i) {
     for (size_t j = 0; j < nn.weights[i].rows; ++j) {
       for (size_t k = 0; k < nn.weights[i].cols; ++k) {
         MAT_AT(nn.weights[i], j, k) -= rate * MAT_AT(g.weights[i], j, k);
