@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #ifndef NN_ACT
-#define NN_ACT ACT_SIG
+#define NN_ACT ACTIVATION_SIGMOID
 #endif  // NN_ACT
 
 #ifndef NN_RELU_PARAM
@@ -95,8 +95,6 @@ void *region_alloc(Region *r, size_t size_bytes);
 typedef struct {
   size_t rows;
   size_t cols;
-  // TODO Remove stride
-  size_t stride;
   float *elements;
 } Matrix;
 
@@ -105,17 +103,18 @@ typedef struct {
   float *elements;
 } Row;
 
-#define ROW_AT(row, col) (r).elements[(col)]
+#define ROW_AT(row, col) (row).elements[(col)]
 
 Matrix row_as_matrix(Row row);
-#define row_alloc(r, c) matrix_row(matrix_alloc(r, 1, c), 0)
+#define row_alloc(r, cols) matrix_row(matrix_alloc(r, 1, cols), 0)
 Row row_slice(Row row, size_t i, size_t cols);
-#define row_rand(row, low, high) mat_rand(row_as_mat(row), low, high)
-#define row_fill(row, x) mat_fill(row_as_mat(row), x);
-#define row_print(row, name, padding) mat_print(row_as_mat(row), name, padding)
-#define row_copy(dst, src) mat_copy(row_as_mat(dst), row_as_mat(src))
+#define row_rand(row, low, high) matrix_randomize(row_as_matrix(row), low, high)
+#define row_fill(row, x) matrix_fill(row_as_matrix(row), x);
+#define row_print(row, name, padding) \
+  matrix_print(row_as_matrix(row), name, padding)
+#define row_copy(dst, src) matrix_copy(row_as_matrix(dst), row_as_matrix(src))
 
-#define MAT_AT(m, i, j) (m).elements[(i) * (m).stride + (j)]
+#define MAT_AT(m, i, j) (m).elements[(i) * (m).cols + (j)]
 
 /**
  * Allocates memory for our matrix
@@ -153,9 +152,15 @@ void matrix_multi(Matrix dest, Matrix a, Matrix b);
 void matrix_sum(Matrix dest, Matrix a);
 
 /**
+ * Matrix activation, applies the activation function to our matrix
+ * @param Matrix m
+ */
+void matrix_activation(Matrix m);
+
+/**
  * Returns a single row of a matrix
  */
-Matrix matrix_row(Matrix m, size_t row);
+Row matrix_row(Matrix m, size_t row);
 
 /**
  * memcopy a matrix
@@ -181,20 +186,21 @@ typedef struct {
   size_t arch_count;
 
   Matrix *weights;
-  Matrix *biases;
+  Row *biases;
 
-  Matrix *activations;  // the amount of activations is count + 1
+  Row *activations;  // the amount of activations is count + 1
 } NN;
 
-#define NN_INPUT(nn) (nn).activations[0]
-#define NN_OUTPUT(nn) (nn).activations[(nn).arch_count]
+#define NN_INPUT(nn) (NN_ASSERT((nn).arch_count > 0), (nn).activations[0])
+#define NN_OUTPUT(nn) \
+  (NN_ASSERT((nn).arch_count > 0), (nn).activations[(nn).arch_count - 1])
 
 /**
  * Allocates memory for a neural network
  * @param size_t arch_count
  * @param size_t *arch
  */
-NN nn_alloc(size_t *arch, size_t arch_count);
+NN nn_alloc(Region *r, size_t *arch, size_t arch_count);
 void nn_zero(NN nn);
 
 /**
@@ -226,13 +232,7 @@ void nn_forward(NN nn);
  * @param Matrix to
  * @return float
  */
-float nn_cost(NN nn, Matrix ti, Matrix to);
-
-/**
- * Finite difference TODO make this a derivative
- * @param NN nn
- */
-void nn_finite_diff(NN nn, NN g, float eps, Matrix ti, Matrix to);
+float nn_cost(NN nn, Matrix t);
 
 /**
  * Backpropagation
@@ -240,7 +240,7 @@ void nn_finite_diff(NN nn, NN g, float eps, Matrix ti, Matrix to);
  * @param Matrix ti
  * @param Matrix to
  */
-void nn_backprop(NN nn, NN g, Matrix ti, Matrix to);
+void nn_backprop(Region *r, NN nn, Matrix t);
 
 void nn_learn(NN nn, NN g, float rate);
 
@@ -329,6 +329,14 @@ void matrix_sum(Matrix dest, Matrix a) {
   }
 }
 
+void matrix_activation(Matrix m) {
+  for (size_t i = 0; i < m.rows; ++i) {
+    for (size_t j = 0; j < m.cols; ++j) {
+      MAT_AT(m, i, j) = activationf(MAT_AT(m, i, j), NN_ACT);
+    }
+  }
+}
+
 void matrix_print(Matrix m, const char *name, size_t padding) {
   printf("%*s%s = [\n", (int)padding, "", name);
   for (size_t i = 0; i < m.rows; ++i) {
@@ -365,11 +373,9 @@ void matrix_sig(Matrix m) {
   }
 }
 
-Matrix matrix_row(Matrix m, size_t row) {
-  return (Matrix){
-      .rows = 1,
+Row matrix_row(Matrix m, size_t row) {
+  return (Row){
       .cols = m.cols,
-      .stride = m.stride,
       .elements = &MAT_AT(m, row, 0),
   };
 }
@@ -385,26 +391,26 @@ void matrix_copy(Matrix dst, Matrix src) {
   }
 }
 
-NN nn_alloc(size_t *arch, size_t arch_count) {
+NN nn_alloc(Region *r, size_t *arch, size_t arch_count) {
   NN_ASSERT(arch_count > 0);
 
   NN nn;
   nn.arch = arch;
-  nn.arch_count = arch_count - 1;
+  nn.arch_count = arch_count;
 
-  nn.weights = NN_MALLOC(sizeof(*nn.weights) * nn.arch_count);
+  nn.weights = region_alloc(r, sizeof(*nn.weights) * nn.arch_count - 1);
   NN_ASSERT(nn.weights != NULL);
-  nn.biases = NN_MALLOC(sizeof(*nn.biases) * nn.arch_count);
+  nn.biases = region_alloc(r, sizeof(*nn.biases) * nn.arch_count - 1);
   NN_ASSERT(nn.biases != NULL);
-  nn.activations = NN_MALLOC(sizeof(*nn.activations) * (nn.arch_count + 1));
+  nn.activations = region_alloc(r, sizeof(*nn.activations) * (nn.arch_count));
   NN_ASSERT(nn.activations != NULL);
 
-  nn.activations[0] = matrix_alloc(1, arch[0]);
+  nn.activations[0] = row_alloc(r, arch[0]);
 
   for (size_t i = 1; i < arch_count; ++i) {
-    nn.weights[i - 1] = matrix_alloc(nn.activations[i - 1].cols, arch[i]);
-    nn.biases[i - 1] = matrix_alloc(1, arch[i]);
-    nn.activations[i] = matrix_alloc(1, arch[i]);
+    nn.weights[i - 1] = matrix_alloc(r, nn.activations[i - 1].cols, arch[i]);
+    nn.biases[i - 1] = row_alloc(r, arch[i]);
+    nn.activations[i] = row_alloc(r, arch[i]);
   }
 
   return nn;
@@ -413,10 +419,10 @@ NN nn_alloc(size_t *arch, size_t arch_count) {
 void nn_zero(NN nn) {
   for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_fill(nn.weights[i], 0);
-    matrix_fill(nn.biases[i], 0);
-    matrix_fill(nn.activations[i], 0);
+    row_fill(nn.biases[i], 0);
+    row_fill(nn.activations[i], 0);
   }
-  matrix_fill(nn.activations[nn.arch_count], 0);
+  row_fill(nn.activations[nn.arch_count], 0);
 }
 
 void nn_print(NN nn, const char *name) {
@@ -426,7 +432,7 @@ void nn_print(NN nn, const char *name) {
     snprintf(buf, sizeof(buf), "weights%zu", i);
     matrix_print(nn.weights[i], buf, 4);
     snprintf(buf, sizeof(buf), "biases%zu", i);
-    matrix_print(nn.biases[i], buf, 4);
+    row_print(nn.biases[i], buf, 4);
   }
   printf("]\n");
 }
@@ -434,33 +440,35 @@ void nn_print(NN nn, const char *name) {
 void nn_rand(NN nn, float low, float high) {
   for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_randomize(nn.weights[i], low, high);
-    matrix_randomize(nn.biases[i], low, high);
+    row_rand(nn.biases[i], low, high);
   }
 }
 
 void nn_forward(NN nn) {
   for (size_t i = 0; i < nn.arch_count; ++i) {
-    matrix_multi(nn.activations[i + 1], nn.activations[i], nn.weights[i]);
-    matrix_sum(nn.activations[i + 1], nn.biases[i]);
-    matrix_sig(nn.activations[i + 1]);
+    matrix_multi(row_as_matrix(nn.activations[i + 1]),
+                 row_as_matrix(nn.activations[i]), nn.weights[i]);
+    matrix_sum(row_as_matrix(nn.activations[i + 1]),
+               row_as_matrix(nn.biases[i]));
+    matrix_activation(row_as_matrix(nn.activations[i + 1]));
   }
 }
 
-float nn_cost(NN nn, Matrix ti, Matrix to) {
-  NN_ASSERT(ti.rows == to.rows);
-  NN_ASSERT(to.cols == NN_OUTPUT(nn).cols);
-  size_t n = ti.rows;
+float nn_cost(NN nn, Matrix t) {
+  NN_ASSERT(NN_INPUT(nn).cols + NN_OUTPUT(nn).cols == t.cols);
+  size_t n = t.rows;
 
   float c = 0;
   for (size_t i = 0; i < n; ++i) {
-    Matrix x = matrix_row(ti, i);
-    Matrix y = matrix_row(to, i);
+    Row row = matrix_row(t, i);
+    Row x = row_slice(row, 0, NN_INPUT(nn).cols);
+    Row y = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
 
-    matrix_copy(NN_INPUT(nn), x);
+    row_copy(NN_INPUT(nn), x);
     nn_forward(nn);
-    size_t q = to.cols;
+    size_t q = y.cols;
     for (size_t j = 0; j < q; ++j) {
-      float d = MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(y, 0, j);
+      float d = ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(y, j);
       c += d * d;
     }
   }
@@ -474,7 +482,7 @@ float nn_cost(NN nn, Matrix ti, Matrix to) {
  * Better variable names
  *
  */
-void nn_backprop(Region *r, NN g, Matrix tensor) {
+void nn_backprop(Region *r, NN nn, Matrix tensor) {
   size_t n = tensor.rows;
   NN_ASSERT(NN_OUTPUT(nn).cols + NN_OUTPUT(nn).cols == tensor.cols);
 
@@ -498,23 +506,26 @@ void nn_backprop(Region *r, NN g, Matrix tensor) {
       row_fill(gradient.activations[j], 0);
     }
 
-    for (size_t j = 0; j < to.cols; ++j) {
-      ROW_AT(NN_OUTPUT(g), j) = ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j);
+    for (size_t j = 0; j < output.cols; ++j) {
+      ROW_AT(NN_OUTPUT(gradient), j) =
+          ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(output, j);
     }
+
+    float s = 2;
 
     for (size_t l = nn.arch_count - 1; l > 0; --l) {
       for (size_t j = 0; j < nn.activations[l].cols; ++j) {
         float a = ROW_AT(nn.activations[l], j);
-        float da = ROW_AT(g.activations[l], j);
+        float da = ROW_AT(gradient.activations[l], j);
         float qa = activationdf(a, NN_ACT);
-        ROW_AT(g.bs[l - 1], j) += s * da * qa;
+        ROW_AT(gradient.biases[l - 1], j) += s * da * qa;
         for (size_t k = 0; k < nn.activations[l - 1].cols; ++k) {
           // j - weight matrix col
           // k - weight matrix row
           float pa = ROW_AT(nn.activations[l - 1], k);
           float w = MAT_AT(nn.weights[l - 1], k, j);
-          MAT_AT(g.weights[l - 1], k, j) += s * da * qa * pa;
-          ROW_AT(g.activations[l - 1], k) += s * da * qa * w;
+          MAT_AT(gradient.weights[l - 1], k, j) += s * da * qa * pa;
+          ROW_AT(gradient.activations[l - 1], k) += s * da * qa * w;
         }
       }
     }
@@ -532,43 +543,16 @@ void nn_backprop(Region *r, NN g, Matrix tensor) {
   }
 }
 
-void nn_finite_diff(NN nn, NN g, float eps, Matrix ti, Matrix to) {
-  float saved;
-  float c = nn_cost(nn, ti, to);
-
+void nn_learn(NN nn, NN gradient, float rate) {
   for (size_t i = 0; i < nn.arch_count; ++i) {
     for (size_t j = 0; j < nn.weights[i].rows; ++j) {
       for (size_t k = 0; k < nn.weights[i].cols; ++k) {
-        saved = MAT_AT(nn.weights[i], j, k);
-        MAT_AT(nn.weights[i], j, k) += eps;
-        MAT_AT(g.weights[i], j, k) = (nn_cost(nn, ti, to) - c) / eps;
-        MAT_AT(nn.weights[i], j, k) = saved;
+        MAT_AT(nn.weights[i], j, k) -= rate * MAT_AT(gradient.weights[i], j, k);
       }
     }
 
-    for (size_t j = 0; j < nn.biases[i].rows; ++j) {
-      for (size_t k = 0; k < nn.biases[i].cols; ++k) {
-        saved = MAT_AT(nn.biases[i], j, k);
-        MAT_AT(nn.biases[i], j, k) += eps;
-        MAT_AT(g.biases[i], j, k) = (nn_cost(nn, ti, to) - c) / eps;
-        MAT_AT(nn.biases[i], j, k) = saved;
-      }
-    }
-  }
-}
-
-void nn_learn(NN nn, NN g, float rate) {
-  for (size_t i = 0; i < nn.arch_count; ++i) {
-    for (size_t j = 0; j < nn.weights[i].rows; ++j) {
-      for (size_t k = 0; k < nn.weights[i].cols; ++k) {
-        MAT_AT(nn.weights[i], j, k) -= rate * MAT_AT(g.weights[i], j, k);
-      }
-    }
-
-    for (size_t j = 0; j < nn.biases[i].rows; ++j) {
-      for (size_t k = 0; k < nn.biases[i].cols; ++k) {
-        MAT_AT(nn.biases[i], j, k) -= rate * MAT_AT(g.biases[i], j, k);
-      }
+    for (size_t k = 0; k < nn.biases[i].cols; ++k) {
+      ROW_AT(nn.biases[i], k) -= rate * ROW_AT(gradient.biases[i], k);
     }
   }
 }
@@ -595,15 +579,15 @@ void *region_alloc(Region *r, size_t size) {
   size_t word_size = sizeof(*r->elements);
   size_t count = (size + word_size - 1) / word_size;
 
-  NN_ASSERT(r->count + count <= r->capacity);
-  if (r->count + count > r->capacity) return NULL;
+  NN_ASSERT(r->size + count <= r->capacity);
+  if (r->size + count > r->capacity) return NULL;
   void *result = &r->elements[r->size];
   r->size += count;
   return result;
 }
 
-Mat row_as_mat(Row row) {
-  return (Mat){
+Matrix row_as_matrix(Row row) {
+  return (Matrix){
       .rows = 1,
       .cols = row.cols,
       .elements = row.elements,

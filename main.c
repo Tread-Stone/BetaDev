@@ -30,12 +30,11 @@ int main(void) {
 
   size_t stride = 3;
   size_t n = 4;
-  Matrix ti = {.rows = n, .cols = 2, .stride = stride, .elements = td};
+  Matrix ti = {.rows = n, .cols = 2, .elements = td};
 
   Matrix to = {
       .rows = n,
       .cols = 1,
-      .stride = stride,
       .elements = td + 2,
   };
 
@@ -46,11 +45,11 @@ int main(void) {
 
   float rate = 2;
 
-  printf("cost = %f\n", nn_cost(nn, ti, to));
+  printf("cost = %f\n", nn_cost(nn, tensor));
   for (size_t i = 0; i < 5000; ++i) {
-    nn_backprop(nn, g, ti, to);
+    nn_backprop(nn, g, tensor);
     nn_learn(nn, g, rate);
-    printf("%zu: cost = %f\n", i, nn_cost(nn, ti, to));
+    printf("%zu: cost = %f\n", i, nn_cost(nn, tensor));
   }
 
   NN_PRINT(nn);
