@@ -23,7 +23,7 @@ void verify_nn_gate(NN nn) {
 int main(void) {
   Region temp = region_alloc_alloc(256 * 1024 * 1024);
 
-  Matrix t = matrix_alloc(NULL, 4, 3);
+  Mat t = mat_alloc(NULL, 4, 3);
   for (size_t i = 0; i < 2; ++i) {
     for (size_t j = 0; j < 2; ++j) {
       size_t row = i * 2 + j;

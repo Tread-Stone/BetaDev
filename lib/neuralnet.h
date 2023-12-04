@@ -2,6 +2,7 @@
 #define NEURALNET_H_
 
 #include <math.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -244,6 +245,15 @@ NN nn_backprop(Region *r, NN nn, Matrix t);
 
 void nn_learn(NN nn, NN g, float rate);
 
+typedef struct {
+  size_t begin;
+  float cost;
+  bool finished;
+} Batch;
+
+void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
+                   float rate);
+
 #endif // NEURALNET_H_
 
 #ifdef NN_IMPLEMENTATION
@@ -302,17 +312,17 @@ Matrix matrix_alloc(Region *r, size_t rows, size_t cols) {
   return m;
 }
 
-void matrix_multi(Matrix dest, Matrix a, Matrix b) {
+void matrix_multi(Matrix dst, Matrix a, Matrix b) {
   NN_ASSERT(a.cols == b.rows);
   size_t n = a.cols;
-  NN_ASSERT(dest.rows == a.rows);
-  NN_ASSERT(dest.cols == b.cols);
+  NN_ASSERT(dst.rows == a.rows);
+  NN_ASSERT(dst.cols == b.cols);
 
-  for (size_t i = 0; i < dest.rows; ++i) {
-    for (size_t j = 0; j < dest.cols; ++j) {
-      MAT_AT(dest, i, j) = 0;
+  for (size_t i = 0; i < dst.rows; ++i) {
+    for (size_t j = 0; j < dst.cols; ++j) {
+      MAT_AT(dst, i, j) = 0;
       for (size_t k = 0; k < n; ++k) {
-        MAT_AT(dest, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);
+        MAT_AT(dst, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);
       }
     }
   }
@@ -482,33 +492,32 @@ float nn_cost(NN nn, Matrix t) {
  * Better variable names
  *
  */
-NN nn_backprop(Region *r, NN nn, Matrix tensor) {
-  size_t n = tensor.rows;
-  NN_ASSERT(NN_OUTPUT(nn).cols + NN_OUTPUT(nn).cols == tensor.cols);
+NN nn_backprop(Region *r, NN nn, Matrix t) {
+  size_t n = t.rows;
+  NN_ASSERT(NN_INPUT(nn).cols + NN_OUTPUT(nn).cols == t.cols);
 
-  NN gradient = nn_alloc(r, nn.arch, nn.arch_count);
-  nn_zero(gradient);
+  NN g = nn_alloc(r, nn.arch, nn.arch_count);
+  nn_zero(g);
 
   // i - current sample
   // l - current layer
-  // j - current activations
-  // k - previous activations
+  // j - current activation
+  // k - previous activation
 
   for (size_t i = 0; i < n; ++i) {
-    Row row = matrix_row(tensor, i);
-    Row input = row_slice(row, 0, NN_INPUT(nn).cols);
-    Row output = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
+    Row row = matrix_row(t, i);
+    Row in = row_slice(row, 0, NN_INPUT(nn).cols);
+    Row out = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
 
-    row_copy(NN_INPUT(nn), input);
+    row_copy(NN_INPUT(nn), in);
     nn_forward(nn);
 
-    for (size_t j = 0; j <= nn.arch_count; ++j) {
-      row_fill(gradient.activations[j], 0);
+    for (size_t j = 0; j < nn.arch_count; ++j) {
+      row_fill(g.activations[j], 0);
     }
 
-    for (size_t j = 0; j < output.cols; ++j) {
-      ROW_AT(NN_OUTPUT(gradient), j) =
-          ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(output, j);
+    for (size_t j = 0; j < out.cols; ++j) {
+      ROW_AT(NN_OUTPUT(g), j) = ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j);
     }
 
     float s = 2;
@@ -516,33 +525,33 @@ NN nn_backprop(Region *r, NN nn, Matrix tensor) {
     for (size_t l = nn.arch_count - 1; l > 0; --l) {
       for (size_t j = 0; j < nn.activations[l].cols; ++j) {
         float a = ROW_AT(nn.activations[l], j);
-        float da = ROW_AT(gradient.activations[l], j);
+        float da = ROW_AT(g.activations[l], j);
         float qa = activationdf(a, NN_ACT);
-        ROW_AT(gradient.biases[l - 1], j) += s * da * qa;
+        ROW_AT(g.biases[l - 1], j) += s * da * qa;
         for (size_t k = 0; k < nn.activations[l - 1].cols; ++k) {
           // j - weight matrix col
           // k - weight matrix row
           float pa = ROW_AT(nn.activations[l - 1], k);
           float w = MAT_AT(nn.weights[l - 1], k, j);
-          MAT_AT(gradient.weights[l - 1], k, j) += s * da * qa * pa;
-          ROW_AT(gradient.activations[l - 1], k) += s * da * qa * w;
+          MAT_AT(g.weights[l - 1], k, j) += s * da * qa * pa;
+          ROW_AT(g.activations[l - 1], k) += s * da * qa * w;
         }
       }
     }
   }
 
-  for (size_t i = 0; i < gradient.arch_count; ++i) {
-    for (size_t j = 0; j < gradient.weights[i].rows; ++j) {
-      for (size_t k = 0; k < gradient.weights[i].cols; ++k) {
-        MAT_AT(gradient.weights[i], j, k) /= n;
+  for (size_t i = 0; i < g.arch_count - 1; ++i) {
+    for (size_t j = 0; j < g.weights[i].rows; ++j) {
+      for (size_t k = 0; k < g.weights[i].cols; ++k) {
+        MAT_AT(g.weights[i], j, k) /= n;
       }
     }
-    for (size_t k = 0; k < gradient.biases[i].cols; ++k) {
-      ROW_AT(gradient.biases[i], k) /= n;
+    for (size_t k = 0; k < g.biases[i].cols; ++k) {
+      ROW_AT(g.biases[i], k) /= n;
     }
   }
 
-  return gradient;
+  return g;
 }
 
 void nn_learn(NN nn, NN gradient, float rate) {
@@ -588,6 +597,39 @@ void *region_alloc(Region *r, size_t size) {
   void *result = &r->elements[r->size];
   r->size += count;
   return result;
+}
+
+void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
+                   float rate) {
+  if (b->finished) {
+    b->finished = false;
+    b->begin = 0;
+    b->cost = 0;
+  }
+
+  size_t size = batch_size;
+  if (b->begin + batch_size >= t.rows) {
+    size = t.rows - b->begin;
+  }
+
+  // TODO: introduce similar to row_slice operation but for Mat that will give
+  // you subsequence of rows
+  Matrix batch_t = {
+      .rows = size,
+      .cols = t.cols,
+      .elements = &MAT_AT(t, b->begin, 0),
+  };
+
+  NN g = nn_backprop(r, nn, batch_t);
+  nn_learn(nn, g, rate);
+  b->cost += nn_cost(nn, batch_t);
+  b->begin += batch_size;
+
+  if (b->begin >= t.rows) {
+    size_t batch_count = (t.rows + batch_size - 1) / batch_size;
+    b->cost /= batch_count;
+    b->finished = true;
+  }
 }
 
 Matrix row_as_matrix(Row row) {
