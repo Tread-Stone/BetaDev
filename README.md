@@ -11,10 +11,10 @@ BetaDev is an ambitious project attempting to create an AlphaDev Language Server
 
 ## Getting Started
 To test the project, follow these steps:
-'''
+```bash
 chmod +rx build.sh
 ./build.sh && ./nn
-'''
+```
 
 ## Build Instructions
 The project uses CMake for building. The `CMakeLists.txt` file is available [here](https://github.com/Tread-Stone/BetaDev/blob/main/CMakeLists.txt).
