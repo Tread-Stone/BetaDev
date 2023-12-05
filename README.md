@@ -2,10 +2,10 @@
 <p align="center">AI Tools for Red Team Exploits</p>
 <p align="center">
   <kbd>
-    <img src="https://github.com/Tread-Stone/BetaDev/assets/61941978/e6791c97-f5f8-4ccb-8294-bfd127b3a0c5"></img>
-
+    <img src="https://github.com/Tread-Stone/BetaDev/assets/61941978/e6791c97-f5f8-4ccb-8294-bfd127b3a0c5" width="500" height="auto"></img>
   </kbd>
 </p>
+
 
 ## Overview
 BetaDev is an ambitious project attempting to create an AlphaDev Language Server Protocol (LSP) for C/C++. This project includes a variety of components, from neural network implementations to big data processing scripts.
