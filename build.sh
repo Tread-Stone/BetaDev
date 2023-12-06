@@ -7,3 +7,4 @@ set -xe
 # clang -Wall -Wextra -o xor xor.c -lm
 
 clang -Wall -Wextra -o nn main.c -lm
+clang++ -Wall -Wextra -o test ./tests/run-tests.cpp 

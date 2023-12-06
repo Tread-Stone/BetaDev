@@ -1,23 +1,19 @@
-void test_init() {
-  if (std::filesystem::exists("./main.cpp")) {
-    printf("Test 1 passed ✅ \n");
-  }
-}
-
-void test_xor() {
-  if (std::system("../build.sh && ../nn")) {
-    printf("Test 2 passed ✅ \n");
-  };
-}
-
-void test_pipeline() {
-  if (std::system("python3 ../mnist.py")) {
-    printf("Test 3 passed ✅ \n");
-  };
-}
+#include <cstdlib>     // For std::system
+#include <filesystem>  // For std::filesystem
+#include <iostream>    // For std::cout
 
 int main() {
-  test_init();
-  test_xor();
+  if (std::filesystem::exists("./main.c")) {
+    std::cout << "Test 1 passed ✅ \n";
+  }
+
+  if (std::system("../build.sh && ../nn")) {
+    std::cout << "Test 2 passed ✅ \n";
+  }
+
+  if (std::system("python3 ../big_data/mnist.py")) {
+    std::cout << "Test 3 passed ✅ \n";
+  }
+
   return 0;
 }
