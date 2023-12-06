@@ -42,7 +42,7 @@ int main(void) {
   }
 
   NN nn = nn_alloc(NULL, arch, ARRAY_LEN(arch));
-  nn_rand(nn, 0, 1);
+  nn_randomize(nn, 0, 1);
 
   clock_t learn_time = clock();
   size_t epoch = 0;

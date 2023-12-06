@@ -1,5 +1,5 @@
 # Specify the default compiler
-COMPILER ?= CLANG
+COMPILER ?= GCC
 
 # Specify the compilers
 ifeq ($(COMPILER),CLANG)
@@ -16,7 +16,7 @@ CFLAGS = -Wall
 
 # Specify the linker flags
 # Add `-lsqlite3` to link the SQLite3 library
-LDFLAGS = -lm
+LDFLAGS = -lm -lstdc++
 
 # Specify the target file
 TARGET = nn
@@ -32,7 +32,7 @@ all: $(TARGET)
 
 # Test files
 TEST_SOURCES = tests/run-tests.cpp 
-TEST_C_SOURCES =  
+TEST_C_SOURCES = lib/neuralnet.c
 TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o) $(TEST_C_SOURCES:.c=.o)
 TEST_TARGET = run_tests
 
