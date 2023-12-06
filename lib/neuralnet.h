@@ -1,5 +1,7 @@
-#ifndef NEURALNET_H_
-#define NEURALNET_H_
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 #include <math.h>
 #include <stdbool.h>
@@ -261,4 +263,6 @@ typedef struct {
 void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
                    float rate);
 
+#ifdef __cplusplus
+}
 #endif  // NEURALNET_H_

@@ -23,7 +23,7 @@ TARGET = nn
 
 # Separate C and C++ source files
 CPP_SOURCES = src/server.cpp 
-C_SOURCES = main.c neuralnet.c
+C_SOURCES = main.c lib/neuralnet.c
 
 # Generate object files from sources
 OBJECTS = $(CPP_SOURCES:.cpp=.o) $(C_SOURCES:.c=.o)

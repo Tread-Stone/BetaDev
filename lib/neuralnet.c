@@ -189,7 +189,7 @@ void nn_print(NN nn, const char *name) {
   printf("]\n");
 }
 
-void nn_rand(NN nn, float low, float high) {
+void nn_randomize(NN nn, float low, float high) {
   for (size_t i = 0; i < nn.arch_count; ++i) {
     matrix_randomize(nn.weights[i], low, high);
     row_rand(nn.biases[i], low, high);

@@ -5,11 +5,6 @@
 #include <iostream>    // For std::cout
 
 #include "../lib/neuralnet.h"
-#define NN_IMPLEMENTATION
-
-size_t arch[] = {2, 2, 1};
-size_t max_epoch = 50 * 1000;
-float rate = 3.0f;
 
 void verify_nn_gate(NN nn) {
   printf("Verifying XOR Gate:\n");
@@ -32,6 +27,10 @@ void timing_stats(const char *name, clock_t learn_time, size_t epoch) {
 }
 
 void test_NN() {
+  size_t arch[] = {2, 2, 1};
+  size_t max_epoch = 50 * 1000;
+  float rate = 3.0f;
+
   try {
     Region temp = region_alloc_alloc(256 * 1024 * 1024);
 
@@ -65,7 +64,7 @@ void test_NN() {
     printf("Test 3 Failed ❌ \n");
   }
 }
-int main() {
+int test() {
   if (std::filesystem::exists("./main.c")) {
     std::cout << "Test 1 passed ✅ \n";
   }
