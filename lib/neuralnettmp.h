@@ -8,48 +8,42 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <vector>
 
-#ifdef __cplusplus
 namespace neuralnet {
 
 #ifndef NN_ACT
 #define NN_ACT ACTIVATION_SIGMOID
 #endif  // NN_ACT
 
-#ifndef NN_RELU_PARAM
-#define NN_RELU_PARAM 0.01f
-#endif  // NN_RELU_PARAM
+constexpr float NN_RELU_PARAM = 0.01f;
 
-#ifndef NN_MALLOC
-#include <stdlib.h>
-#define NN_MALLOC malloc
-#endif  // NN_MALLOC
+enum class Activation {
+  Sigmoid,
+  Relu,
+  Tanh,
+  Sin,
+};
 
-#ifndef NN_ASSERT
-#include <assert.h>
-#define NN_ASSERT assert
-#endif  // NN_ASSERT
+// utility functions
+inline float rand_float() {
+  return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+};
 
-#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
+inline float sigmoidf(float x) { return 1.0f / (1.0f + std::exp(-x)); };
 
-typedef enum {
-  ACTIVATION_SIGMOID,
-  ACTIVATION_RELU,
-  ACTIVATION_TANH,
-  ACTIVATION_SIN,
-} ACTIVATION;
+inline float reluf(float x) { return x > 0.0f ? x : NN_RELU_PARAM * x; };
 
-float rand_float(void);
-float sigmoidf(float x);
-float reluf(float x);
-float tanhf(float x);
-float activationf(float x, ACTIVATION act);
-float activationdf(float x, ACTIVATION act);
+inline float tanhf(float x) { return std::tanh(x); };
+
+float activationf(float x, Activation act);
+float activationdf(float x, Activation act);
 
 class Region {
  public:
   Region(size_t capacity_bytes);
-  void *alloc(size_t size_bytes);
+
+  void* alloc(size_t size_bytes);
   void reset();
   size_t occupied_bytes() const;
   void save();
@@ -63,66 +57,75 @@ class Region {
 
 class Matrix {
  public:
-  Matrix(size_t rows, size_t cols, float *elements);
+  Matrix(size_t rows, size_t cols, float* elements);
   void fill(float num);
-  void matrix_multi(Matrix dest, Matrix a, Matrix b);
+  void multiplication(Matrix dest, Matrix a, Matrix b);
   void randomize(float low, float high);
   void activation();
-  void print(const char *name, size_t padding) const;
-  void mat_shuffle_rows(Matrix m);
-  void matrix_sig(Matrix m);
-  void matrix_copy(Matrix dst, Matrix src);
+  void print(const char* name, size_t padding) const;
+  void shuffle_rows(Matrix m);
+  void sigmoid(Matrix m);
+  void copy(Matrix dst, Matrix src);
+  void sum(const Matrix& a);
 
-  const float &at(size_t i, size_t j) const {
-    assert(i < rows && j < cols);
-    return elements[i * cols + j];
-  }
+  float& at(size_t i, size_t j);
+  const float& at(size_t i, size_t j) const;
 
  private:
-  size_t rows;
-  size_t cols;
-  std::unique_ptr<float[]> elements;
+  size_t rows, cols;
+  std::vector<float> elements;
 };
 
 class Row {
  public:
-  Row(size_t cols, float *elements);
-  float &at(size_t col);
+  explicit Row(size_t cols);
+
   void randomize(float low, float high);
   void fill(float x);
-  void print(const char *name, size_t padding) const;
-  Row slice(size_t i, size_t cols);
-  Matrix as_matrix(Row row);
+  void print(const char* name, size_t padding) const;
+  Row slice(size_t i, size_t cols) const;
+  Matrix asMatrix() const;
+  void copy(const Row& src);
+
+  float& at(size_t col);
+  const float& at(size_t col) const;
 
  private:
   size_t cols;
-  float *elements;
+  std::vector<float> elements;
 };
 
 class NN {
  public:
-  NN(Region &r, size_t *arch, size_t arch_count);
+  NN(Region& r, const std::vector<size_t>& arch);
+
   void zero();
-  void print(const char *name) const;
+  void print(const char* name) const;
   void randomize(float low, float high);
   void forward();
-  float cost(Matrix &t);
-  NN backprop(Region &r, Matrix t);
-  void learn(NN &gradient, float rate);
+  float cost(const Matrix& t);
+  NN backprop(Region& r, const Matrix& t);
+  void learn(const NN& gradient, float rate);
+
+  Matrix& input();
+  const Matrix& input() const;
+  Matrix& output();
+  const Matrix& output() const;
 
  private:
-  size_t arch_count;
-  size_t *arch;
-  Matrix *activations;
-  Matrix *weights;
-  Matrix *biases;
+  std::vector<size_t> arch;
+  std::vector<Matrix> activations;
+  std::vector<Matrix> weights;
+  std::vector<Matrix> biases;
 };
 
 class Batch {
  public:
   Batch();
-  void process(Region *r, size_t batch_size, NN nn, Matrix t, float rate);
-  bool is_finished();
+
+  void process(Region& r, size_t batch_size, NN& nn, const Matrix& t,
+               float rate);
+  bool isFinished() const;
 
  private:
   size_t begin;
@@ -131,4 +134,3 @@ class Batch {
 };
 
 }  // namespace neuralnet
-#endif  // __cplusplus

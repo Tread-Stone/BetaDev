@@ -2,50 +2,40 @@
 
 namespace neuralnet {
 
-float sigmoidf(float x) { return 1.f / (1.f + expf(-x)); }
-
-float reluf(float x) { return x > 0 ? x : x * NN_RELU_PARAM; }
-
-float tanhf(float x) {
-  float ex = expf(x);
-  float emx = expf(-x);
-  return (ex - emx) / (ex + emx);
-}
-
-float activationf(float x, ACTIVATION act) {
+float activationf(float x, Activation act) {
   switch (act) {
-    case ACTIVATION_SIGMOID:
+    case Activation::Sigmoid:
       return sigmoidf(x);
-    case ACTIVATION_RELU:
+    case Activation::Relu:
       return reluf(x);
-    case ACTIVATION_TANH:
+    case Activation::Tanh:
       return tanhf(x);
-    case ACTIVATION_SIN:
+    case Activation::Sin:
       return sinf(x);
     default:
-      NN_ASSERT(0 && "Invalid activation function");
+      assert(0 && "Invalid activation function");
       return 0;
   }
 }
 
-float activationdf(float x, ACTIVATION act) {
+float activationdf(float x, Activation act) {
   switch (act) {
-    case ACTIVATION_SIGMOID:
+    case Activation::Sigmoid:
       return x * (1 - x);
-    case ACTIVATION_RELU:
+    case Activation::Relu:
       return x >= 0 ? 1 : NN_RELU_PARAM;
-    case ACTIVATION_TANH:
+    case Activation::Tanh:
       return 1 - x * x;
-    case ACTIVATION_SIN:
+    case Activation::Sin:
       return cosf(asinf(x));
     default:
-      NN_ASSERT(0 && "Invalid activation function");
+      assert(0 && "Invalid activation function");
       return 0;
   }
 }
 
-float rand_float(void) {
-  return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+Matrix::Matrix(size_t rows, size_t cols) : rows(rows), cols(cols) {
+  elements = std::make_unique<float[]>(rows * cols);
 }
 
 Matrix matrix_alloc(Region *r, size_t rows, size_t cols) {
