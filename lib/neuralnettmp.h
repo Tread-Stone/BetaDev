@@ -10,6 +10,10 @@
 #include <memory>
 #include <vector>
 
+#include "batch.h"
+#include "matrix.h"
+#include "region.h"
+
 namespace neuralnet {
 
 #ifndef NN_ACT
@@ -38,22 +42,6 @@ inline float tanhf(float x) { return std::tanh(x); };
 
 float activationf(float x, Activation act);
 float activationdf(float x, Activation act);
-
-class Region {
- public:
-  Region(size_t capacity_bytes);
-
-  void* alloc(size_t size_bytes);
-  void reset();
-  size_t occupied_bytes() const;
-  void save();
-  void rewind(size_t s);
-
- private:
-  size_t capacity;
-  size_t size;
-  std::unique_ptr<uintptr_t> elements;
-};
 
 class Matrix {
  public:
@@ -117,20 +105,6 @@ class NN {
   std::vector<Matrix> activations;
   std::vector<Matrix> weights;
   std::vector<Matrix> biases;
-};
-
-class Batch {
- public:
-  Batch();
-
-  void process(Region& r, size_t batch_size, NN& nn, const Matrix& t,
-               float rate);
-  bool isFinished() const;
-
- private:
-  size_t begin;
-  float cost;
-  bool finished;
 };
 
 }  // namespace neuralnet
