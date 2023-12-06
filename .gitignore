@@ -1,3 +1,63 @@
+# Compiled Object files
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+Debug/
+Release/
+dist/
+.vscode/
+.vs/
+*.code-workspace
+
+# Other common unneeded files
+*.log
+*.bak
+*.swp
+*.swo
+*.tar
+*.zip
+*.gz
+*.rar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+
+# IDE & Editor directories/files
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swm
+
+# Temporary files generated during build
+*.ilk
+*.exp
+*.pdb
+*.idb
+*.lastbuildstate
+*.opendb
+
 # Cmake output
 build/
 # Training data
