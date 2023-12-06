@@ -57,7 +57,7 @@ class Region {
 
 class Matrix {
  public:
-  Matrix(size_t rows, size_t cols, float* elements);
+  Matrix(size_t rows, size_t cols);
   void fill(float num);
   void multiplication(Matrix dest, Matrix a, Matrix b);
   void randomize(float low, float high);
