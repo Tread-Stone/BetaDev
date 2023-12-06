@@ -23,7 +23,7 @@ TARGET = nn
 
 # Separate C and C++ source files
 CPP_SOURCES = src/server.cpp 
-C_SOURCES = main.c
+C_SOURCES = main.c neuralnet.c
 
 # Generate object files from sources
 OBJECTS = $(CPP_SOURCES:.cpp=.o) $(C_SOURCES:.c=.o)
@@ -32,10 +32,10 @@ all: $(TARGET)
 
 # Test files
 TEST_SOURCES = tests/run-tests.cpp 
-TEST_C_SOURCES = lib/neuralnet.c
-TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o) $(TEST_C_SOURCES:.c=.o)
+TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o) $(C_SOURCES:.c=.o)
 TEST_TARGET = run_tests
 
+# Ensure the object file for neuralnet.c is included in the linking process
 $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
 

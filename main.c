@@ -1,6 +1,5 @@
 #include <time.h>
 
-#define NN_IMPLEMENTATION
 #include "./lib/neuralnet.h"
 
 size_t arch[] = {2, 2, 1};

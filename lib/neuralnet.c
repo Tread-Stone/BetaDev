@@ -1,4 +1,4 @@
-#ifdef NN_IMPLEMENTATION
+#include "neuralnet.h"
 
 float sigmoidf(float x) { return 1.f / (1.f + expf(-x)); }
 
@@ -402,5 +402,3 @@ Row row_slice(Row row, size_t i, size_t cols) {
       .elements = &ROW_AT(row, i),
   };
 }
-
-#endif  // NN_IMPLEMENTATION
