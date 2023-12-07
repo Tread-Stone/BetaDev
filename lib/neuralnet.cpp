@@ -1,44 +1,45 @@
-#include "neuralnettmp.h"
+#include "./include/nn.h"
+#include <cassert>
 
-namespace neuralnet {
+namespace nn {
 
 float activationf(float x, Activation act) {
   switch (act) {
-    case Activation::Sigmoid:
-      return sigmoidf(x);
-    case Activation::Relu:
-      return reluf(x);
-    case Activation::Tanh:
-      return tanhf(x);
-    case Activation::Sin:
-      return sinf(x);
-    default:
-      assert(0 && "Invalid activation function");
-      return 0;
+  case Activation::Sigmoid:
+    return sigmoidf(x);
+  case Activation::Relu:
+    return reluf(x);
+  case Activation::Tanh:
+    return tanhf(x);
+  case Activation::Sin:
+    return sinf(x);
+  default:
+    assert(0 && "Invalid activation function");
+    return 0;
   }
 }
 
 float activationdf(float x, Activation act) {
   switch (act) {
-    case Activation::Sigmoid:
-      return x * (1 - x);
-    case Activation::Relu:
-      return x >= 0 ? 1 : NN_RELU_PARAM;
-    case Activation::Tanh:
-      return 1 - x * x;
-    case Activation::Sin:
-      return cosf(asinf(x));
-    default:
-      assert(0 && "Invalid activation function");
-      return 0;
+  case Activation::Sigmoid:
+    return x * (1 - x);
+  case Activation::Relu:
+    return x >= 0 ? 1 : NN_RELU_PARAM;
+  case Activation::Tanh:
+    return 1 - x * x;
+  case Activation::Sin:
+    return cosf(asinf(x));
+  default:
+    assert(0 && "Invalid activation function");
+    return 0;
   }
 }
 
 NN nn_alloc(Region *r, size_t *arch, size_t arch_count) {
-  NN_ASSERT(arch_count > 0);
+  assert(arch_count > 0);
 
   NN nn;
-  nn.arch = arch;
+  nn.get_arch() = arch;
   nn.arch_count = arch_count;
 
   nn.weights = region_alloc(r, sizeof(*nn.weights) * nn.arch_count - 1);
@@ -220,12 +221,14 @@ Region region_alloc_alloc(size_t capacity_bytes) {
 }
 
 void *region_alloc(Region *r, size_t size) {
-  if (r == NULL) return NN_MALLOC(size);
+  if (r == NULL)
+    return NN_MALLOC(size);
   size_t word_size = sizeof(*r->elements);
   size_t count = (size + word_size - 1) / word_size;
 
   NN_ASSERT(r->size + count <= r->capacity);
-  if (r->size + count > r->capacity) return NULL;
+  if (r->size + count > r->capacity)
+    return NULL;
   void *result = &r->elements[r->size];
   r->size += count;
   return result;
@@ -293,4 +296,4 @@ Row row_slice(Row row, size_t i, size_t cols) {
       .elements = &ROW_AT(row, i),
   };
 }
-}  // namespace neuralnet
+} // namespace nn

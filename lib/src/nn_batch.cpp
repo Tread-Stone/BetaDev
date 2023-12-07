@@ -11,28 +11,28 @@ void batch_process(Region *r, Batch *b, size_t batch_size, nn::NN nn, Matrix t,
   }
 
   size_t size = batch_size;
-  if (b->begin + batch_size >= t.rows) {
-    size = t.rows - b->begin;
+  if (b->begin + batch_size >= t.get_rows()) {
+    size = t.get_rows() - b->begin;
   }
 
   // TODO: introduce similar to row_slice operation but for Mat that will give
   // you subsequence of rows
   Matrix batch_t = {
       .rows = size,
-      .cols = t.cols,
+      .cols = t.get_cols(),
       .elements = &MAT_AT(t, b->begin, 0),
   };
 
-  nn::NN g = nn_backprop(r, nn, batch_t);
-  nn_learn(nn, g, rate);
-  b->cost += nn_cost(nn, batch_t);
+  NN g = backprop(r, nn, batch_t);
+  learn(nn, g, rate);
+  b->cost += cost(nn, batch_t);
   b->begin += batch_size;
 
-  if (b->begin >= t.rows) {
-    size_t batch_count = (t.rows + batch_size - 1) / batch_size;
+  if (b->begin >= t.get_rows()) {
+    size_t batch_count = (t.get_rows() + batch_size - 1) / batch_size;
     b->cost /= batch_count;
     b->finished = true;
   }
 }
 
-}  // namespace neuralnet
+} // namespace neuralnet

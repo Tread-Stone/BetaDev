@@ -38,7 +38,7 @@ float activationf(float x, Activation act);
 float activationdf(float x, Activation act);
 
 class Row {
- public:
+public:
   explicit Row(size_t cols);
 
   void randomize(float low, float high);
@@ -51,13 +51,13 @@ class Row {
   float &at(size_t col);
   const float &at(size_t col) const;
 
- private:
+private:
   size_t cols;
   std::vector<float> &elements;
 };
 
 class NN {
- public:
+public:
   NN(Region &r, const std::vector<size_t> &arch);
 
   void zero();
@@ -73,11 +73,17 @@ class NN {
   Matrix &output();
   const Matrix &output() const;
 
- private:
+  // getters and setters
+  std::vector<Matrix> get_weights() const { return weights; }
+  std::vector<Matrix> get_biases() const { return biases; }
+  std::vector<Matrix> get_activations() const { return activations; }
+  std::vector<size_t> get_arch() const { return arch; }
+
+private:
   std::vector<size_t> arch;
   std::vector<Matrix> activations;
   std::vector<Matrix> weights;
   std::vector<Matrix> biases;
 };
 
-}  // namespace nn
+} // namespace nn
