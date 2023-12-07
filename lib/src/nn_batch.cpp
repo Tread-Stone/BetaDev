@@ -1,8 +1,8 @@
-#include "../neuralnettmp.h"
+#include "../include/nn.h"
 
 namespace neuralnet {
 
-void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
+void batch_process(Region *r, Batch *b, size_t batch_size, nn::NN nn, Matrix t,
                    float rate) {
   if (b->finished) {
     b->finished = false;
@@ -23,7 +23,7 @@ void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
       .elements = &MAT_AT(t, b->begin, 0),
   };
 
-  NN g = nn_backprop(r, nn, batch_t);
+  nn::NN g = nn_backprop(r, nn, batch_t);
   nn_learn(nn, g, rate);
   b->cost += nn_cost(nn, batch_t);
   b->begin += batch_size;
@@ -35,4 +35,4 @@ void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
   }
 }
 
-} // namespace neuralnet
+}  // namespace neuralnet

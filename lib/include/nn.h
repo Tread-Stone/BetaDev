@@ -1,9 +1,6 @@
 #pragma once
 
 // C++ compatible headers
-#include "matrix.h"
-#include "region.h"
-
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -12,7 +9,10 @@
 #include <cstdlib>
 #include <vector>
 
-namespace neuralnet {
+#include "matrix.h"
+#include "region.h"
+
+namespace nn {
 
 constexpr float NN_RELU_PARAM = 0.01f;
 
@@ -38,7 +38,7 @@ float activationf(float x, Activation act);
 float activationdf(float x, Activation act);
 
 class Row {
-public:
+ public:
   explicit Row(size_t cols);
 
   void randomize(float low, float high);
@@ -51,13 +51,13 @@ public:
   float &at(size_t col);
   const float &at(size_t col) const;
 
-private:
+ private:
   size_t cols;
   std::vector<float> &elements;
 };
 
 class NN {
-public:
+ public:
   NN(Region &r, const std::vector<size_t> &arch);
 
   void zero();
@@ -73,11 +73,11 @@ public:
   Matrix &output();
   const Matrix &output() const;
 
-private:
-  std::vector<size_t> *arch;
-  std::vector<Matrix> *activations;
-  std::vector<Matrix> *weights;
-  std::vector<Matrix> *biases;
+ private:
+  std::vector<size_t> arch;
+  std::vector<Matrix> activations;
+  std::vector<Matrix> weights;
+  std::vector<Matrix> biases;
 };
 
-} // namespace neuralnet
+}  // namespace nn

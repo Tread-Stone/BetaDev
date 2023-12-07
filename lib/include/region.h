@@ -1,10 +1,10 @@
 #pragma once
 
-#include "nn.h"
 #include <cstddef>
+#include <memory>
 
 class Region {
-public:
+ public:
   Region(size_t capacity_bytes);
 
   void *alloc(size_t size_bytes);
@@ -13,7 +13,7 @@ public:
   void save();
   void rewind(size_t s);
 
-private:
+ private:
   size_t capacity;
   size_t size;
   std::unique_ptr<uintptr_t> elements;
