@@ -1,18 +1,19 @@
 #pragma once
 
-#include "neuralnettmp.h"
+#include "nn.h"
+#include <cstddef>
 
 class Region {
- public:
+public:
   Region(size_t capacity_bytes);
 
-  void* alloc(size_t size_bytes);
+  void *alloc(size_t size_bytes);
   void reset();
   size_t occupied_bytes() const;
   void save();
   void rewind(size_t s);
 
- private:
+private:
   size_t capacity;
   size_t size;
   std::unique_ptr<uintptr_t> elements;

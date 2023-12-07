@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../neuralnettmp.h"
+#include "nn.h"
 #include "region.h"
 
 class Batch {

@@ -53,7 +53,7 @@ public:
 
 private:
   size_t cols;
-  std::vector<float> elements;
+  std::vector<float> &elements;
 };
 
 class NN {
@@ -74,10 +74,10 @@ public:
   const Matrix &output() const;
 
 private:
-  std::vector<size_t> arch;
-  std::vector<Matrix> activations;
-  std::vector<Matrix> weights;
-  std::vector<Matrix> biases;
+  std::vector<size_t> *arch;
+  std::vector<Matrix> *activations;
+  std::vector<Matrix> *weights;
+  std::vector<Matrix> *biases;
 };
 
 } // namespace neuralnet
