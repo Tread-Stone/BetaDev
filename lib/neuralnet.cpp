@@ -35,29 +35,23 @@ float activationdf(float x, Activation act) {
   }
 }
 
-NN nn_alloc(Region *r, size_t *arch, size_t arch_count) {
-  assert(arch_count > 0);
-
-  NN nn;
-  nn.get_arch() = arch;
-  nn.arch_count = arch_count;
-
-  nn.weights = region_alloc(r, sizeof(*nn.weights) * nn.arch_count - 1);
-  NN_ASSERT(nn.weights != NULL);
-  nn.biases = region_alloc(r, sizeof(*nn.biases) * nn.arch_count - 1);
-  NN_ASSERT(nn.biases != NULL);
-  nn.activations = region_alloc(r, sizeof(*nn.activations) * (nn.arch_count));
-  NN_ASSERT(nn.activations != NULL);
-
-  nn.activations[0] = row_alloc(r, arch[0]);
-
-  for (size_t i = 1; i < arch_count; ++i) {
-    nn.weights[i - 1] = matrix_alloc(r, nn.activations[i - 1].cols, arch[i]);
-    nn.biases[i - 1] = row_alloc(r, arch[i]);
-    nn.activations[i] = row_alloc(r, arch[i]);
+NN::NN(Region &r, const std::vector<size_t> &architecture) {
+  // Assuming 'Matrix' is a class that handles its own allocation
+  for (size_t i = 0; i < architecture.size(); ++i) {
+    if (i < architecture.size() - 1) {
+      weights.push_back(Matrix(r, architecture[i], architecture[i + 1]));
+      biases.push_back(Matrix(r, 1, architecture[i + 1]));
+    }
+    activations.push_back(Matrix(r, 1, architecture[i]));
   }
 
-  return nn;
+  // Initialize weights and biases
+  for (auto &w : weights) {
+    w.randomize(-1.0f, 1.0f); // Example range
+  }
+  for (auto &b : biases) {
+    b.fill(0.0f);
+  }
 }
 
 void nn_zero(NN nn) {

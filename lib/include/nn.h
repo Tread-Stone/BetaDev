@@ -58,7 +58,7 @@ private:
 
 class NN {
 public:
-  NN(Region &r, const std::vector<size_t> &arch);
+  NN(Region &r, const std::vector<size_t> &architecture);
 
   void zero();
   void print(const char *name) const;
@@ -77,10 +77,10 @@ public:
   std::vector<Matrix> get_weights() const { return weights; }
   std::vector<Matrix> get_biases() const { return biases; }
   std::vector<Matrix> get_activations() const { return activations; }
-  std::vector<size_t> get_arch() const { return arch; }
+  std::vector<size_t> get_arch() const { return architecture; }
 
 private:
-  std::vector<size_t> arch;
+  std::vector<size_t> architecture;
   std::vector<Matrix> activations;
   std::vector<Matrix> weights;
   std::vector<Matrix> biases;
