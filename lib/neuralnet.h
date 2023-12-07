@@ -1,7 +1,7 @@
 #pragma once
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif // __cplusplus
 
 #include <math.h>
 #include <stdbool.h>
@@ -11,21 +11,21 @@ extern "C" {
 
 #ifndef NN_ACT
 #define NN_ACT ACTIVATION_SIGMOID
-#endif  // NN_ACT
+#endif // NN_ACT
 
 #ifndef NN_RELU_PARAM
 #define NN_RELU_PARAM 0.01f
-#endif  // NN_RELU_PARAM
+#endif // NN_RELU_PARAM
 
 #ifndef NN_MALLOC
 #include <stdlib.h>
 #define NN_MALLOC malloc
-#endif  // NN_MALLOC
+#endif // NN_MALLOC
 
 #ifndef NN_ASSERT
 #include <assert.h>
 #define NN_ASSERT assert
-#endif  // NN_ASSERT
+#endif // NN_ASSERT
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
@@ -90,7 +90,7 @@ typedef struct {
 Region region_alloc_alloc(size_t capacity_bytes);
 void *region_alloc(Region *r, size_t size_bytes);
 #define region_reset(r) (NN_ASSERT((r) != NULL), (r)->size = 0)
-#define region_occupied_bytes(r) \
+#define region_occupied_bytes(r)                                               \
   (NN_ASSERT((r) != NULL), (r)->size * sizeof(*(r)->elements))
 #define region_save(r) (NN_ASSERT((r) != NULL), (r)->size)
 #define region_rewind(r, s) (NN_ASSERT((r) != NULL), (r)->size = s)
@@ -113,7 +113,7 @@ Matrix row_as_matrix(Row row);
 Row row_slice(Row row, size_t i, size_t cols);
 #define row_rand(row, low, high) matrix_randomize(row_as_matrix(row), low, high)
 #define row_fill(row, x) matrix_fill(row_as_matrix(row), x);
-#define row_print(row, name, padding) \
+#define row_print(row, name, padding)                                          \
   matrix_print(row_as_matrix(row), name, padding)
 #define row_copy(dst, src) matrix_copy(row_as_matrix(dst), row_as_matrix(src))
 
@@ -198,11 +198,11 @@ typedef struct {
   Matrix *weights;
   Row *biases;
 
-  Row *activations;  // the amount of activations is count + 1
+  Row *activations; // the amount of activations is count + 1
 } NN;
 
 #define NN_INPUT(nn) (NN_ASSERT((nn).arch_count > 0), (nn).activations[0])
-#define NN_OUTPUT(nn) \
+#define NN_OUTPUT(nn)                                                          \
   (NN_ASSERT((nn).arch_count > 0), (nn).activations[(nn).arch_count - 1])
 
 /**
@@ -265,4 +265,4 @@ void batch_process(Region *r, Batch *b, size_t batch_size, NN nn, Matrix t,
 
 #ifdef __cplusplus
 }
-#endif  // NEURALNET_H_
+#endif // NEURALNET_H_

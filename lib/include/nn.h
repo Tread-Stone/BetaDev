@@ -1,24 +1,18 @@
 #pragma once
 
 // C++ compatible headers
+#include "matrix.h"
+#include "region.h"
+
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <vector>
 
-#include "batch.h"
-#include "matrix.h"
-#include "region.h"
-
 namespace neuralnet {
-
-#ifndef NN_ACT
-#define NN_ACT ACTIVATION_SIGMOID
-#endif  // NN_ACT
 
 constexpr float NN_RELU_PARAM = 0.01f;
 
@@ -44,46 +38,46 @@ float activationf(float x, Activation act);
 float activationdf(float x, Activation act);
 
 class Row {
- public:
+public:
   explicit Row(size_t cols);
 
   void randomize(float low, float high);
   void fill(float x);
-  void print(const char* name, size_t padding) const;
+  void print(const char *name, size_t padding) const;
   Row slice(size_t i, size_t cols) const;
-  Matrix asMatrix() const;
-  void copy(const Row& src);
+  Matrix as_matrix() const;
+  void copy(const Row &src);
 
-  float& at(size_t col);
-  const float& at(size_t col) const;
+  float &at(size_t col);
+  const float &at(size_t col) const;
 
- private:
+private:
   size_t cols;
   std::vector<float> elements;
 };
 
 class NN {
- public:
-  NN(Region& r, const std::vector<size_t>& arch);
+public:
+  NN(Region &r, const std::vector<size_t> &arch);
 
   void zero();
-  void print(const char* name) const;
+  void print(const char *name) const;
   void randomize(float low, float high);
   void forward();
-  float cost(const Matrix& t);
-  NN backprop(Region& r, const Matrix& t);
-  void learn(const NN& gradient, float rate);
+  float cost(const Matrix &t);
+  NN backprop(Region &r, const Matrix &t);
+  void learn(const NN &gradient, float rate);
 
-  Matrix& input();
-  const Matrix& input() const;
-  Matrix& output();
-  const Matrix& output() const;
+  Matrix &input();
+  const Matrix &input() const;
+  Matrix &output();
+  const Matrix &output() const;
 
- private:
+private:
   std::vector<size_t> arch;
   std::vector<Matrix> activations;
   std::vector<Matrix> weights;
   std::vector<Matrix> biases;
 };
 
-}  // namespace neuralnet
+} // namespace neuralnet
