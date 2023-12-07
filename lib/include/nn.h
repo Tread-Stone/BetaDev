@@ -72,6 +72,8 @@ public:
   const Matrix &input() const;
   Matrix &output();
   const Matrix &output() const;
+  void set_activation(Activation act);
+  void initalize_weights();
 
   // getters and setters
   std::vector<Matrix> get_weights() const { return weights; }

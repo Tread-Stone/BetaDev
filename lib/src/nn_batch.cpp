@@ -2,6 +2,14 @@
 
 namespace neuralnet {
 
+Batch *batch_init() {
+  Batch *b = new Batch;
+  b->finished = true;
+  b->begin = 0;
+  b->cost = 0;
+  return b;
+}
+
 void batch_process(Region *r, Batch *b, size_t batch_size, nn::NN nn, Matrix t,
                    float rate) {
   if (b->finished) {
