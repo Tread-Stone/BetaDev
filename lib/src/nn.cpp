@@ -1,38 +1,56 @@
 #include "../include/nn.h"
+
+#include <cassert>
 #include <cstddef>
 
 namespace nn {
 
-NN::NN(Region &r, const std::vector<size_t> &architecture) {
-  initalize_weights();
-  set_activation(Activation::Sigmoid);
-}
+NN::NN(Region &r, const std::vector<size_t> &architecture) {}
 
-void NN::initalize_weights() {
-  for (size_t i = 0; i < architecture.size() - 1; i++) {
-    weights.push_back(Matrix(architecture[i], architecture[i + 1]));
-    biases.push_back(Matrix(1, architecture[i + 1]));
-  }
-}
+void NN::initalize_weights() {}
 
-void NN::set_activation(Activation act) {
+float activationf(float x, Activation act) {
   switch (act) {
-  case Activation::Sigmoid:
-    activationf = [](float x) { return 1.0f / (1.0f + std::exp(-x)); };
-    activationdf = [](float x) { return x * (1 - x); };
-    break;
-  case Activation::Relu:
-    activationf = [](float x) { return x > 0 ? x : 0; };
-    activationdf = [](float x) { return x > 0 ? 1 : 0; };
-    break;
-  case Activation::Sin:
-    activationf = [](float x) { return x > 0 ? x : 0.01f * x; };
-    activationdf = [](float x) { return x > 0 ? 1 : 0.01f; };
-    break;
-  case Activation::Tanh:
-    activationf = [](float x) { return std::tanh(x); };
-    activationdf = [](float x) { return 1 - x * x; };
-    break;
+    case Activation::Sigmoid:
+      return sigmoidf(x);
+    case Activation::Relu:
+      return reluf(x);
+    case Activation::Tanh:
+      return tanhf(x);
+    case Activation::Sin:
+      return sinf(x);
+    default:
+      assert(0 && "Invalid activation function");
+      return 0;
   }
 }
-} // namespace nn
+
+float activationdf(float x, Activation act) {
+  switch (act) {
+    case Activation::Sigmoid:
+      return x * (1 - x);
+    case Activation::Relu:
+      return x >= 0 ? 1 : NN_RELU_PARAM;
+    case Activation::Tanh:
+      return 1 - x * x;
+    case Activation::Sin:
+      return cosf(asinf(x));
+    default:
+      assert(0 && "Invalid activation function");
+      return 0;
+  }
+}
+
+void NN::zero() {}
+
+void NN::randomize(float low, float high) {}
+
+void NN::forward() {}
+
+float NN::cost(const Matrix &t) {}
+
+NN NN::backprop(Region &r, const Matrix &t) {}
+
+void NN::learn(const NN &gradient, float rate) {}
+
+}  // namespace nn

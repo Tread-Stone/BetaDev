@@ -12,33 +12,33 @@ float tanhf(float x) {
 
 float activationf(float x, ACTIVATION act) {
   switch (act) {
-  case ACTIVATION_SIGMOID:
-    return sigmoidf(x);
-  case ACTIVATION_RELU:
-    return reluf(x);
-  case ACTIVATION_TANH:
-    return tanhf(x);
-  case ACTIVATION_SIN:
-    return sinf(x);
-  default:
-    NN_ASSERT(0 && "Invalid activation function");
-    return 0;
+    case ACTIVATION_SIGMOID:
+      return sigmoidf(x);
+    case ACTIVATION_RELU:
+      return reluf(x);
+    case ACTIVATION_TANH:
+      return tanhf(x);
+    case ACTIVATION_SIN:
+      return sinf(x);
+    default:
+      NN_ASSERT(0 && "Invalid activation function");
+      return 0;
   }
 }
 
 float activationdf(float x, ACTIVATION act) {
   switch (act) {
-  case ACTIVATION_SIGMOID:
-    return x * (1 - x);
-  case ACTIVATION_RELU:
-    return x >= 0 ? 1 : NN_RELU_PARAM;
-  case ACTIVATION_TANH:
-    return 1 - x * x;
-  case ACTIVATION_SIN:
-    return cosf(asinf(x));
-  default:
-    NN_ASSERT(0 && "Invalid activation function");
-    return 0;
+    case ACTIVATION_SIGMOID:
+      return x * (1 - x);
+    case ACTIVATION_RELU:
+      return x >= 0 ? 1 : NN_RELU_PARAM;
+    case ACTIVATION_TANH:
+      return 1 - x * x;
+    case ACTIVATION_SIN:
+      return cosf(asinf(x));
+    default:
+      NN_ASSERT(0 && "Invalid activation function");
+      return 0;
   }
 }
 
@@ -329,14 +329,12 @@ Region region_alloc_alloc(size_t capacity_bytes) {
 }
 
 void *region_alloc(Region *r, size_t size) {
-  if (r == NULL)
-    return NN_MALLOC(size);
+  if (r == NULL) return NN_MALLOC(size);
   size_t word_size = sizeof(*r->elements);
   size_t count = (size + word_size - 1) / word_size;
 
   NN_ASSERT(r->size + count <= r->capacity);
-  if (r->size + count > r->capacity)
-    return NULL;
+  if (r->size + count > r->capacity) return NULL;
   void *result = &r->elements[r->size];
   r->size += count;
   return result;

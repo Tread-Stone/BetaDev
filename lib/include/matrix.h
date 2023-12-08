@@ -1,31 +1,41 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <vector>
 
+#include "region.h"
+
+namespace nn {
+
 class Matrix {
+#define MAT_AT(m, i, j) (m).elements[(i) * (m).cols + (j)]
+
  public:
-  Matrix(size_t rows, size_t cols);
-  void fill(float num);
-  void multiplication(Matrix dest, Matrix a, Matrix b);
-  void randomize(float low, float high);
-  void activation();
-  void print(const char *name, size_t padding) const;
-  void shuffle_rows(Matrix m);
-  void sigmoid(Matrix m);
-  void copy(Matrix dst, Matrix src);
-  void sum(const Matrix &a);
+  Matrix(Region* region, size_t rows, size_t cols)
+      : rows_(rows), cols_(cols), elements_(rows * cols) {}
+  void fill(Matrix mat, double val);
+  void randomize(Matrix mat, double min, double max);
+  void add(Matrix dst, Matrix x);
+  void multiply(Matrix dst, Matrix x, Matrix y);
 
-  // Getters and setters
-  size_t get_rows() const { return rows; }
-  size_t get_cols() const { return cols; }
-  float *get_elements() { return elements->data(); }
-  const float *get_elements() const { return elements->data(); }
-
-  float &at(size_t i, size_t j);
-  const float &at(size_t i, size_t j) const;
+  double& at(Matrix mat, size_t row, size_t col) {
+    assert(row < mat.rows_);
+    assert(col < mat.cols_);
+    return (mat).elements_[(row) * (mat).cols_ + (col)];
+  }
 
  private:
-  size_t rows, cols;
-  std::vector<float> *elements;
+  // rows cols and elements
+  size_t rows_;
+  size_t cols_;
+  std::vector<double> elements_;
 };
+
+// Row is a view of a row of a matrix.
+class Row {
+ public:
+ private:
+  // cols and elements
+};
+}  // namespace nn

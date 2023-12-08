@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <vector>
 
 #include "matrix.h"
@@ -37,55 +38,41 @@ inline float tanhf(float x) { return std::tanh(x); };
 float activationf(float x, Activation act);
 float activationdf(float x, Activation act);
 
-class Row {
-public:
-  explicit Row(size_t cols);
-
-  void randomize(float low, float high);
-  void fill(float x);
-  void print(const char *name, size_t padding) const;
-  Row slice(size_t i, size_t cols) const;
-  Matrix as_matrix() const;
-  void copy(const Row &src);
-
-  float &at(size_t col);
-  const float &at(size_t col) const;
-
-private:
-  size_t cols;
-  std::vector<float> &elements;
-};
-
 class NN {
-public:
+ public:
   NN(Region &r, const std::vector<size_t> &architecture);
+  float activationf(float x, Activation act);
+  float activationdf(float x, Activation act);
+  static double random_double(double min, double max);
 
-  void zero();
-  void print(const char *name) const;
-  void randomize(float low, float high);
-  void forward();
-  float cost(const Matrix &t);
-  NN backprop(Region &r, const Matrix &t);
-  void learn(const NN &gradient, float rate);
+  // architecture
+  std::vector<size_t> architecture_;
+  // weights
+  std::vector<Matrix> weights_;
+  // biases
+  std::vector<Matrix> biases_;
+  // activations
+  std::vector<Matrix> activations_;
+  // gradients
+  std::vector<Matrix> gradients_;
+  // cost
+  float cost_;
+  // learning rate
+  float rate_;
+  // momentum
+  float momentum_;
+  // weight decay
+  float decay_;
+  // dropout
+  float dropout_;
+  // dropout mask
+  std::vector<Matrix> dropout_mask_;
+  // activation function
+  Activation activation_;
+  // output activation function
+  Activation output_activation_;
 
-  Matrix &input();
-  const Matrix &input() const;
-  Matrix &output();
-  const Matrix &output() const;
-  void set_activation(Activation act);
-  void initalize_weights();
-
-  // getters and setters
-  std::vector<Matrix> get_weights() const { return weights; }
-  std::vector<Matrix> get_biases() const { return biases; }
-  std::vector<Matrix> get_activations() const { return activations; }
-  std::vector<size_t> get_arch() const { return architecture; }
-
-private:
-  std::vector<size_t> architecture;
-  std::vector<Matrix> activations;
-  std::vector<Matrix> weights;
-  std::vector<Matrix> biases;
+ private:
 };
 
-} // namespace nn
+}  // namespace nn
